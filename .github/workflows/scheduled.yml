@@ -1,0 +1,42 @@
+name: Scheduled Python Script
+
+on:
+  schedule:
+    - cron: '59 15 * * *' # 每天 UTC 15:59 (台灣時間 23:59)
+  workflow_dispatch:      # 允許手動觸發
+
+jobs:
+  run-python:
+    runs-on: ubuntu-latest
+    
+    # 強制所有 Actions 使用 Node 24 執行，消除 Node 20 棄用警告
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      TZ: Asia/Taipei
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip' # 開啟 pip 快取，縮短每次跑腳本安裝套件的時間
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Run script
+        run: python aqi.py
+        env:
+          # 將您的 Secret 變數注入環境
+          HOST: ${{ secrets.HOST }}
+          PORT: ${{ secrets.PORT }}
+          USER: ${{ secrets.USER }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+          NAME: ${{ secrets.NAME }}
